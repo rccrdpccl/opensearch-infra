@@ -1,0 +1,133 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: assisted-events-scrape
+objects:
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: prometheus-opensearch-exporter
+    labels:
+      app: prometheus-opensearch-exporter
+  spec:
+    type: ClusterIP
+    ports:
+      - name: http
+        port: 9108
+        protocol: TCP
+    selector:
+      app: prometheus-opensearch-exporter
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: prometheus-opensearch-exporter
+    labels:
+      app: prometheus-opensearch-exporter
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: prometheus-opensearch-exporter
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: prometheus-opensearch-exporter
+      spec:
+        restartPolicy: Always
+        containers:
+          - name: exporter
+            env:
+              - name: ES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: ${ES_PASSWORD_SECRET_NAME}
+                    key: ${ES_PASSWORD_SECRET_KEY}
+              - name: ES_USERNAME
+                valueFrom:
+                  secretKeyRef:
+                    name: ${ES_USERNAME_SECRET_NAME}
+                    key: ${ES_USERNAME_SECRET_KEY}
+              - name: OPENSEARCH_URI
+                valueFrom:
+                  secretKeyRef:
+                    name: ${ES_URI_SECRET_NAME}
+                    key: ${ES_URI_SECRET_KEY}
+            image: ${IMAGE_NAME}:${IMAGE_TAG}
+            imagePullPolicy: ${IMAGE_PULL_POLICY}
+            command: ["elasticsearch_exporter",
+                      "--log.format=logfmt",
+                      "--log.level=info",
+                      "--es.uri=$(OPENSEARCH_URI)",
+                      "--es.all",
+                      "--es.indices",
+                      "--es.indices_settings",
+                      "--es.indices_mappings",
+                      "--es.shards",
+                      "--es.snapshots",
+                      "--es.timeout=30s",
+                      "--web.listen-address=:9108",
+                      "--web.telemetry-path=/metrics"]
+            resources:
+              limits:
+                cpu: ${CPU_LIMIT}
+                memory: ${MEMORY_LIMIT}
+              requests:
+                cpu: ${CPU_REQUEST}
+                memory: ${MEMORY_REQUEST}
+            ports:
+              - containerPort: 9108
+                name: http
+            livenessProbe:
+              httpGet:
+                path: /healthz
+                port: http
+              initialDelaySeconds: 5
+              timeoutSeconds: 5
+              periodSeconds: 5
+            readinessProbe:
+              httpGet:
+                path: /healthz
+                port: http
+              initialDelaySeconds: 1
+              timeoutSeconds: 5
+              periodSeconds: 5
+            lifecycle:
+              preStop:
+                exec:
+                  command: ["/bin/ash", "-c", "sleep 20"]
+parameters:
+- name: MEMORY_LIMIT
+  value: "256Mi"
+  required: false
+- name: CPU_LIMIT
+  value: "1"
+  required: false
+- name: MEMORY_REQUEST
+  value: "32Mi"
+  required: false
+- name: CPU_REQUEST
+  value: "5m"
+  required: false
+- name: ES_USERNAME_SECRET_NAME
+  value: elastic-master-credentials
+- name: ES_USERNAME_SECRET_KEY
+  value: master_user_name
+- name: ES_PASSWORD_SECRET_NAME
+  value: elastic-master-credentials
+- name: ES_PASSWORD_SECRET_KEY
+  value: master_user_password
+- name: ES_URI_SECRET_NAME
+  value: assisted-installer-elasticsearch
+- name: ES_URI_SECRET_KEY
+  value: endpoint
+- name: IMAGE_NAME
+  value: "quay.io/prometheuscommunity/elasticsearch-exporter"
+- name: IMAGE_TAG
+  value: "v1.3.0"
+- name: IMAGE_PULL_POLICY
+  value: "IfNotPresent"
