@@ -57,7 +57,7 @@ objects:
                   secretKeyRef:
                     name: ${ES_URI_SECRET_NAME}
                     key: ${ES_URI_SECRET_KEY}
-            image: ${IMAGE_NAME}:${IMAGE_TAG}
+            image: ${IMAGE_NAME}
             imagePullPolicy: ${IMAGE_PULL_POLICY}
             command: ["elasticsearch_exporter",
                       "--log.format=logfmt",
@@ -100,6 +100,24 @@ objects:
               preStop:
                 exec:
                   command: ["/bin/ash", "-c", "sleep 20"]
+- apiVersion: monitoring.coreos.com/v1
+  kind: ServiceMonitor
+  metadata:
+    labels:
+      prometheus: app-sre
+    name: servicemonitor-assisted-installer-opensearch
+  spec:
+    endpoints:
+    - interval: 30s
+      path: /metrics
+      port: 9108
+      scheme: http
+    namespaceSelector:
+      matchNames:
+      - ${NAMESPACE}
+    selector:
+      matchLabels:
+        app: prometheus-opensearch-exporter
 parameters:
 - name: MEMORY_LIMIT
   value: "256Mi"
@@ -126,8 +144,6 @@ parameters:
 - name: ES_URI_SECRET_KEY
   value: endpoint
 - name: IMAGE_NAME
-  value: "quay.io/prometheuscommunity/elasticsearch-exporter"
-- name: IMAGE_TAG
-  value: "v1.3.0"
+  value: "quay.io/prometheuscommunity/elasticsearch-exporter:v1.3.0"
 - name: IMAGE_PULL_POLICY
   value: "IfNotPresent"
