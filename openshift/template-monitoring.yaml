@@ -1,0 +1,31 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: assisted-events-scrape
+objects:
+- apiVersion: monitoring.coreos.com/v1
+  kind: ServiceMonitor
+  metadata:
+    labels:
+      prometheus: app-sre
+    name: servicemonitor-assisted-installer-opensearch
+  spec:
+    endpoints:
+    - interval: 30s
+      path: /metrics
+      port: "9108"
+      scheme: http
+      metricRelabelings:
+      - source_labels: [cluster]
+        regex:  '\d+:(.*)'
+        replacement: '$1'
+        target_label: cluster
+    namespaceSelector:
+      matchNames:
+      - ${NAMESPACE}
+    selector:
+      matchLabels:
+        app: prometheus-opensearch-exporter
+parameters:
+- name: NAMESPACE
+  required: true
