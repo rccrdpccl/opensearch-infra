@@ -110,8 +110,13 @@ objects:
     endpoints:
     - interval: 30s
       path: /metrics
-      port: 9108
+      port: "9108"
       scheme: http
+      metricRelabelings:
+      - source_labels: [cluster]
+        regex:  '\d+:(.*)'
+        replacement: '$1'
+        target_label: cluster
     namespaceSelector:
       matchNames:
       - ${NAMESPACE}
