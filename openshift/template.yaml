@@ -100,29 +100,6 @@ objects:
               preStop:
                 exec:
                   command: ["/bin/ash", "-c", "sleep 20"]
-- apiVersion: monitoring.coreos.com/v1
-  kind: ServiceMonitor
-  metadata:
-    labels:
-      prometheus: app-sre
-    name: servicemonitor-assisted-installer-opensearch
-  spec:
-    endpoints:
-    - interval: 30s
-      path: /metrics
-      port: "9108"
-      scheme: http
-      metricRelabelings:
-      - source_labels: [cluster]
-        regex:  '\d+:(.*)'
-        replacement: '$1'
-        target_label: cluster
-    namespaceSelector:
-      matchNames:
-      - ${NAMESPACE}
-    selector:
-      matchLabels:
-        app: prometheus-opensearch-exporter
 parameters:
 - name: MEMORY_LIMIT
   value: "256Mi"
