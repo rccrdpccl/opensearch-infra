@@ -1,14 +1,14 @@
 apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
-  name: assisted-events-scrape
+  name: assisted-opensearch
 objects:
 - apiVersion: monitoring.coreos.com/v1
   kind: ServiceMonitor
   metadata:
     labels:
       prometheus: app-sre
-    name: servicemonitor-assisted-installer-opensearch
+    name: servicemonitor-assisted-opensearch-${NAMESPACE}
   spec:
     endpoints:
     - interval: 30s
