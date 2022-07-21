@@ -19,7 +19,7 @@ objects:
       - source_labels: [cluster]
         regex:  '\d+:(.*)'
         replacement: '$1'
-        target_label: cluster
+        target_label: cluster_name
     namespaceSelector:
       matchNames:
       - ${NAMESPACE}
