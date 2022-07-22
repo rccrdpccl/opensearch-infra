@@ -16,10 +16,10 @@ objects:
       port: "http"
       scheme: http
       metricRelabelings:
-      - source_labels: [cluster]
+      - sourceLabels: [cluster]
         regex:  '\d+:(.*)'
         replacement: '$1'
-        target_label: cluster
+        targetLabel: cluster
     namespaceSelector:
       matchNames:
       - ${NAMESPACE}
